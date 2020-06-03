@@ -2,8 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
   pull_request:
 
 jobs:
@@ -14,6 +12,7 @@ jobs:
   # Build everything on all platorms (thus testing the developer workflow).
   # Upload the native shared libraries as artifacts.
   build-native:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.id != github.event.pull_request.base.repo.id
     strategy:
       matrix:
         os: [ubuntu-18.04, macos-latest, windows-latest]
