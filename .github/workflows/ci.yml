@@ -51,7 +51,7 @@ jobs:
       run: brew install bison pkg-config
     - name: Compile vcpkg dependencies (Unix)
       if: steps.get-cached-vcpkg.outputs.cache-hit != 'true' && (runner.os == 'Linux' || runner.os == 'macOS')
-      run: ./vcpkg_unix.sh
+      run: ./vcpkg_unix.sh || (for file in build/vcpkg.macos/buildtrees/arrow/config-x64-osx-*; do echo "[$file]"; cat $file; done; false)
     - name: Compile vcpkg dependencies (Windows)
       if: steps.get-cached-vcpkg.outputs.cache-hit != 'true' && runner.os == 'Windows'
       run: ./vcpkg_windows.bat
