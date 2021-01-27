@@ -1,1 +1,1 @@
-https://github.com/GPSnoopy/vcpkg.git arrow-3.0.0
+https://github.com/jgiannuzzi/vcpkg.git arrow-3.0.0
