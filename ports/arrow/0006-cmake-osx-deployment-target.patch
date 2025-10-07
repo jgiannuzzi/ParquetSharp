@@ -1,0 +1,24 @@
+diff --git a/cpp/cmake_modules/ThirdpartyToolchain.cmake b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+index 7fa4b66d4b..b4d183616f 100644
+--- a/cpp/cmake_modules/ThirdpartyToolchain.cmake
++++ b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+@@ -2154,6 +2154,9 @@ macro(build_jemalloc)
+   set(JEMALLOC_STATIC_LIB
+       "${JEMALLOC_LIB_DIR}/libjemalloc_pic${CMAKE_STATIC_LIBRARY_SUFFIX}")
+   set(JEMALLOC_CONFIGURE_COMMAND ./configure "AR=${CMAKE_AR}" "CC=${CMAKE_C_COMPILER}")
++  if(CMAKE_OSX_DEPLOYMENT_TARGET)
++    list(APPEND JEMALLOC_CONFIGURE_COMMAND "CFLAGS=-mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++  endif()
+   if(CMAKE_OSX_SYSROOT)
+     list(APPEND JEMALLOC_CONFIGURE_COMMAND "SDKROOT=${CMAKE_OSX_SYSROOT}")
+   endif()
+@@ -2263,6 +2266,9 @@ if(ARROW_MIMALLOC)
+       -DMI_BUILD_OBJECT=OFF
+       -DMI_BUILD_SHARED=OFF
+       -DMI_BUILD_TESTS=OFF)
++  if(CMAKE_OSX_DEPLOYMENT_TARGET)
++    list(APPEND MIMALLOC_CMAKE_ARGS "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++  endif()
+ 
+   externalproject_add(mimalloc_ep
+                       ${EP_COMMON_OPTIONS}

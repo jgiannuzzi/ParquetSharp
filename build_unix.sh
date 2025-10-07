@@ -61,6 +61,7 @@ fi
 build_types="Debug Release"
 
 # Only build release configuration in CI
+# Set macOS deployment target to 11.0 for maximum compatibility
 if [ "$GITHUB_ACTIONS" = "true" ]
 then
   build_types="Release"
@@ -72,9 +73,11 @@ then
         custom_triplet_file="$custom_triplets_dir/$triplet.cmake"
         cp "$vcpkg_triplet_file" "$custom_triplet_file"
         echo "set(VCPKG_BUILD_TYPE release)" >> "$custom_triplet_file"
+        [ "$os" = "osx" ] && echo "set(VCPKG_OSX_DEPLOYMENT_TARGET 11.0)" >> "$custom_triplet_file"
     fi
   done
   options+=" -D VCPKG_OVERLAY_TRIPLETS=$custom_triplets_dir"
+  [ "$os" = "osx" ] && options+=" -D CMAKE_OSX_DEPLOYMENT_TARGET=11.0"
 fi
 
 for build_type in $build_types
