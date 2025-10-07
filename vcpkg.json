@@ -23,5 +23,10 @@
       "name": "arrow",
       "version": "21.0.0"
     }
-  ]
+  ],
+  "vcpkg-configuration": {
+    "overlay-ports": [
+      "./ports"
+    ]
+  }
 }
