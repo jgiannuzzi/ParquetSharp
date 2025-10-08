@@ -166,6 +166,16 @@ jobs:
       if: runner.os == 'Linux'
       run: docker rm -f centos
 
+    - uses: msys2/setup-msys2@v2
+      if: matrix.os == 'windows-11-arm' && failure()
+      id: setup-msys2
+    - name: Setup tmate session
+      if: matrix.os == 'windows-11-arm' && failure()
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
+        msys2-location: ${{ steps.setup-msys2.outputs.msys2-location }}
+
   # Download all native shared libraries and create the nuget package.
   # Upload nuget package as an artifact.
   build-nuget:
@@ -275,6 +285,15 @@ jobs:
       run: dotnet test csharp.test --configuration=Release --framework ${{ matrix.dotnet }}
     - name: Build & Run F# unit tests
       run: dotnet test fsharp.test --configuration=Release --framework ${{ matrix.dotnet }}
+    - uses: msys2/setup-msys2@v2
+      if: matrix.os == 'windows-11-arm' && failure()
+      id: setup-msys2
+    - name: Setup tmate session
+      if: matrix.os == 'windows-11-arm' && failure()
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
+        msys2-location: ${{ steps.setup-msys2.outputs.msys2-location }}
 
   test-benchmarks:
     name: Run benchmarks in check mode
