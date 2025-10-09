@@ -14,7 +14,15 @@
         {
           "name": "jemalloc",
           "platform": "!windows"
-        }
+        },
+        "acero",
+        "compute",
+        "dataset",
+        "example",
+        "flightsql",
+        "gcs",
+        "orc",
+        "s3"
       ]
     }
   ],
