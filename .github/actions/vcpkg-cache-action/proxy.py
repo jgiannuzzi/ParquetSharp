@@ -38,7 +38,6 @@ async def retry_middleware(
             )
             if attempt + 1 == MAX_RETRIES:
                 return resp
-            await resp.release()
 
         except ClientError as e:
             logger.warning(f"HTTP request failed on attempt {attempt + 1}: {e}")

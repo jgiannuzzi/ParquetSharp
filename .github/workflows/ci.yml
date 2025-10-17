@@ -148,12 +148,15 @@ jobs:
         ACTIONS_RESULTS_URL: ${{ steps.vcpkg-cache-env.outputs.url }}
         ACTIONS_RUNTIME_TOKEN: ${{ steps.vcpkg-cache-env.outputs.token }}
       run: |
-        pipx run uv run sh -c 'uvicorn --use-colors adapter:app >adapter.log 2>&1 & echo $! > pid.txt'
-        tail -f adapter.log &
+        mkdir -p /tmp/vcpkg-cache-action
+        pipx run uv sync --locked
+        PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+        pipx run uv run sh -c "uvicorn --port $PORT --use-colors proxy:app >/tmp/vcpkg-cache-action/log.txt 2>&1 & echo \$! > /tmp/vcpkg-cache-action/pid.txt"
+        tail -f /tmp/vcpkg-cache-action/log.txt &
         for i in {1..10}; do
-          if curl -fsS "http://localhost:8000/health" >/dev/null 2>&1; then
+          if curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1; then
             kill %1 || true
-            echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
+            echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:$PORT/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
             exit 0
           fi
           sleep 0.5
@@ -194,11 +197,10 @@ jobs:
 
     - name: Stop vcpkg caching
       if: ${{ always() }}
-      working-directory: .github/actions/vcpkg-cache-action
       shell: bash
       run: |
-        kill $(cat pid.txt) || true
-        cat adapter.log
+        kill $(cat /tmp/vcpkg-cache-action/pid.txt) || true
+        cat /tmp/vcpkg-cache-action/log.txt
 
     - name: Stop CentOS container
       if: always() && runner.os == 'Linux'
