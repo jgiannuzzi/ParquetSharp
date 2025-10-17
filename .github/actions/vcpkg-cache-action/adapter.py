@@ -28,6 +28,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+@app.get("/health")
+async def health():
+    return "OK"
+
+
 class TwirpError(Exception):
     def __init__(self, status_code: int, media_type: str, body: bytes):
         self.status_code = status_code
@@ -51,7 +56,7 @@ async def twirp_call(
                 if resp.status != 200:
                     body = await resp.read()
                     headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-                    logger.debug(
+                    logger.warning(
                         f"{method} failed with status {resp.status}:\nheaders:\n{headers}\nbody:\n{body.decode()}"
                     )
                     raise TwirpError(resp.status, media_type, body)
@@ -59,7 +64,7 @@ async def twirp_call(
                 if not data.get("ok", False):
                     body = await resp.read()
                     headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-                    logger.debug(
+                    logger.warning(
                         f"{method} did not return ok:\nheaders:\n{headers}\nbody:\n{body.decode()}"
                     )
                     raise TwirpError(status.HTTP_404_NOT_FOUND, media_type, body)
@@ -108,7 +113,7 @@ async def get(name: str, triplet: str, version: str, sha: str, request: Request)
         if resp.status != 200:
             body = await resp.read()
             headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-            logger.debug(
+            logger.warning(
                 f"Download failed with status {resp.status}:\nheaders:\n{headers}\nbody:\n{body.decode()}"
             )
             return Response(body, status_code=resp.status, media_type=media_type)
@@ -144,7 +149,7 @@ async def put(
         if resp.status != 201:
             body = await resp.read()
             headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-            logger.debug(
+            logger.warning(
                 f"Upload failed with status {resp.status}:\nheaders:\n{headers}\nbody:\n{body.decode()}"
             )
             return Response(
