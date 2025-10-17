@@ -134,9 +134,21 @@ jobs:
       if: runner.os == 'Windows'
       uses: microsoft/setup-msbuild@v2
 
+    - name: Expose caching environment variables
+      uses: actions/github-script@v7
+      id: vcpkg-cache-env
+      with:
+        script: |
+          return {
+            url: process.env.ACTIONS_RESULTS_URL,
+            token: process.env.ACTIONS_RUNTIME_TOKEN
+          }
     - name: Setup vcpkg caching
       working-directory: .github/actions/vcpkg-cache-action
       shell: bash
+      env:
+        ACTIONS_RESULTS_URL: ${{ steps.vcpkg-cache-env.outputs.result.url }}
+        ACTIONS_RUNTIME_TOKEN: ${{ steps.vcpkg-cache-env.outputs.result.token }}
       run: |
         pipx run uv run sh -c 'uvicorn adapter:app >adapter.log 2>&1 & echo $! > pid.txt'
         tail -f adapter.log &
@@ -187,7 +199,7 @@ jobs:
       if: ${{ always() }}
       working-directory: .github/actions/vcpkg-cache-action
       run: |
-        tail -f nohup.out &
+        tail -f adapter.log &
         kill $(cat pid.txt) || true
         kill %1 || true
 
