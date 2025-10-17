@@ -153,7 +153,7 @@ jobs:
         pipx run uv run sh -c 'uvicorn adapter:app >adapter.log 2>&1 & echo $! > pid.txt'
         tail -f adapter.log &
         for i in {1..10}; do
-          if curl -fsS "http://localhost:8000/" >/dev/null 2>&1; then
+          if curl -fsS "http://localhost:8000/health" >/dev/null 2>&1; then
             started=true
             echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
             kill %2 || true
