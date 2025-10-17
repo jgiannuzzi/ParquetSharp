@@ -154,10 +154,9 @@ jobs:
         tail -f adapter.log &
         for i in {1..10}; do
           if curl -fsS "http://localhost:8000/health" >/dev/null 2>&1; then
-            started=true
+            kill %1 || true
             echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
-            kill %2 || true
-            break
+            exit 0
           fi
           sleep 0.5
         done
