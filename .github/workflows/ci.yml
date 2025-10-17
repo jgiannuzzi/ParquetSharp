@@ -132,6 +132,13 @@ jobs:
       if: runner.os == 'Windows'
       uses: microsoft/setup-msbuild@v2
 
+    - name: Setup vcpkg caching
+      working-directory: .github/actions/vcpkg-cache-action
+      run: |
+        (uv run fastapi run adapter.py 2>&1 | tee adapter.log) &
+        echo $! > pid.txt
+        echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
+
     # Compile ParquetSharp and C++ dependencies (and upload the native library as an artifact).
     - name: Compile native ParquetSharp library (Linux)
       if: runner.os == 'Linux'
@@ -161,6 +168,12 @@ jobs:
       with:
         name: ${{ steps.vcpkg-info.outputs.triplet }}-native-library
         path: bin
+
+    - name: Stop vcpkg caching
+      working-directory: .github/actions/vcpkg-cache-action
+      run: |
+        kill $(cat pid.txt) || true
+        cat adapter.log
 
     - name: Stop CentOS container
       if: runner.os == 'Linux'
