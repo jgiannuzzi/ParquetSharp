@@ -137,7 +137,7 @@ jobs:
     - name: Setup vcpkg caching
       working-directory: .github/actions/vcpkg-cache-action
       run: |
-        (pipx uv run fastapi run adapter.py 2>&1 | tee adapter.log) &
+        (pipx run uv run fastapi run adapter.py 2>&1 | tee adapter.log) &
         echo $! > pid.txt
         echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
 
