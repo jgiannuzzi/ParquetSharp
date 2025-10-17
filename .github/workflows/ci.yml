@@ -138,7 +138,7 @@ jobs:
       working-directory: .github/actions/vcpkg-cache-action
       shell: bash
       run: |
-        pipx run uv run sh -c 'nohup uvicorn adapter:app &; echo $! > pid.txt'
+        pipx run uv run sh -c 'nohup uvicorn adapter:app & echo $! > pid.txt'
         tail -f nohup.out &
         for i in {1..10}; do
           if curl -fsS "http://localhost:8000/" >/dev/null 2>&1; then
