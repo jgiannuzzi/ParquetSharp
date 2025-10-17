@@ -94,10 +94,11 @@ async def twirp_call(
         data = await resp.json()
         if not data.get("ok", False):
             body = await resp.read()
-            headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-            logger.warning(
-                f"{method} did not return ok:\nheaders:\n{headers}\nbody:\n{body.decode()}"
-            )
+            if method != "GetCacheEntryDownloadURL":
+                headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
+                logger.warning(
+                    f"{method} did not return ok:\nheaders:\n{headers}\nbody:\n{body.decode()}"
+                )
             raise TwirpError(status.HTTP_404_NOT_FOUND, media_type, body)
         return data
 
