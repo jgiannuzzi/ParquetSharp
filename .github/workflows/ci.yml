@@ -136,18 +136,19 @@ jobs:
 
     - name: Setup vcpkg caching
       working-directory: .github/actions/vcpkg-cache-action
+      shell: bash
       run: |
-        nohup pipx run uv run uvicorn adapter:app &
-        echo $! > pid.txt
+        pipx run uv run sh -c 'nohup uvicorn adapter:app &; echo $! > pid.txt'
         tail -f nohup.out &
         for i in {1..10}; do
           if curl -fsS "http://localhost:8000/" >/dev/null 2>&1; then
-            echo "Server is up."
+            started=true
             break
           fi
           sleep 0.5
         done
         kill %2 || true
+        [[ $started == true ]] || (echo "vcpkg cache server failed to start" && exit 1)
         echo "VCPKG_BINARY_SOURCES=clear;http,http://localhost:8000/{name}/{triplet}/{version}/{sha},readwrite" >> $GITHUB_ENV
 
     # Compile ParquetSharp and C++ dependencies (and upload the native library as an artifact).
