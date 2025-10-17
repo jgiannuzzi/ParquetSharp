@@ -2,7 +2,14 @@ import asyncio
 import logging
 import os
 
-from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiohttp import (
+    ClientError,
+    ClientHandlerType,
+    ClientRequest,
+    ClientResponse,
+    ClientSession,
+    ClientTimeout,
+)
 from fastapi import FastAPI, Request, Response, status
 
 logger = logging.getLogger("uvicorn.error")
@@ -15,9 +22,34 @@ auth_headers = headers = {
 }
 
 
+async def retry_middleware(
+    req: ClientRequest, handler: ClientHandlerType
+) -> ClientResponse:
+    for attempt in range(max_retries):
+        try:
+            resp: ClientResponse = await handler(req)
+            if resp.status < 500:
+                return resp
+
+            logger.warning(
+                f"HTTP request failed with status {resp.status} on attempt {attempt + 1}"
+            )
+            if attempt + 1 == max_retries:
+                return resp
+            await resp.release()
+
+        except ClientError as e:
+            logger.warning(f"HTTP request failed on attempt {attempt + 1}: {e}")
+            if attempt + 1 == max_retries:
+                raise e
+
+        await asyncio.sleep(2**attempt)
+
+
 async def lifespan(app: FastAPI):
     app.state.session = ClientSession(
         timeout=ClientTimeout(sock_connect=10, sock_read=60),
+        middlewares=[retry_middleware],
     )
     try:
         yield
@@ -45,40 +77,29 @@ async def twirp_call(
     method: str,
     payload: dict,
 ) -> dict:
-    for attempt in range(max_retries):
-        try:
-            async with session.post(
-                f"{url}twirp/github.actions.results.api.v1.CacheService/{method}",
-                headers=auth_headers,
-                json=payload,
-            ) as resp:
-                media_type = resp.headers.get("Content-Type")
-                if resp.status != 200:
-                    body = await resp.read()
-                    if resp.status != status.HTTP_404_NOT_FOUND:
-                        headers = "\n".join(
-                            f"{k}: {v}" for k, v in resp.headers.items()
-                        )
-                        logger.warning(
-                            f"{method} failed with status {resp.status}:\nheaders:\n{headers}\nbody:\n{body.decode()}"
-                        )
-                    raise TwirpError(resp.status, media_type, body)
-                data = await resp.json()
-                if not data.get("ok", False):
-                    body = await resp.read()
-                    headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
-                    logger.warning(
-                        f"{method} did not return ok:\nheaders:\n{headers}\nbody:\n{body.decode()}"
-                    )
-                    raise TwirpError(status.HTTP_404_NOT_FOUND, media_type, body)
-                return data
-        except Exception as e:
-            if isinstance(e, TwirpError) and e.status_code < 500:
-                raise e
-            if attempt + 1 == max_retries:
-                raise e
-            logger.warning(f"Twirp call {method} failed on attempt {attempt + 1}: {e}")
-            await asyncio.sleep(2**attempt)
+    async with session.post(
+        f"{url}twirp/github.actions.results.api.v1.CacheService/{method}",
+        headers=auth_headers,
+        json=payload,
+    ) as resp:
+        media_type = resp.headers.get("Content-Type")
+        if resp.status != 200:
+            body = await resp.read()
+            if resp.status != status.HTTP_404_NOT_FOUND:
+                headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
+                logger.warning(
+                    f"{method} failed with status {resp.status}:\nheaders:\n{headers}\nbody:\n{body.decode()}"
+                )
+            raise TwirpError(resp.status, media_type, body)
+        data = await resp.json()
+        if not data.get("ok", False):
+            body = await resp.read()
+            headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items())
+            logger.warning(
+                f"{method} did not return ok:\nheaders:\n{headers}\nbody:\n{body.decode()}"
+            )
+            raise TwirpError(status.HTTP_404_NOT_FOUND, media_type, body)
+        return data
 
 
 @app.head("/{name}/{triplet}/{version}/{sha}")
